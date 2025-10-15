@@ -6,34 +6,36 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-
-app.use(cors({
-  origin: "https://myclosets.in",
-  methods: ["POST", "GET"],
-  credentials: true
-}));
-
+app.use(cors({ origin: "https://myclosets.in" }));  // Replace with your GoDaddy domain
 app.use(express.json());
 
+// POST endpoint for contact form
 app.post("/send-mail", async (req, res) => {
   const { name, phone, email, projectType, message } = req.body;
 
+  // Basic validation
   if (!name || !email || !phone || !projectType) {
     return res.status(400).json({ success: false, message: "All required fields must be filled." });
   }
 
+  // Create a transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    service: "gmail",  // Gmail SMTP service
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASS,
+      user: process.env.GMAIL_USER,  // Use your Gmail email address
+      pass: process.env.GMAIL_PASS,  // Use your Gmail app password
     },
+    tls: {
+      rejectUnauthorized: false, // To handle possible SSL issues
+    },
+    port: 465,  // You can also try using port 587
   });
 
+  // Admin email
   const adminMail = {
     from: `"${name}" <${email}>`,
     replyTo: email,
-    to: process.env.ADMIN_EMAIL,
+    to: process.env.ADMIN_EMAIL,  // Use your admin email
     subject: `New Contact Form Submission from ${name}`,
     html: `
       <h3>New Inquiry Received</h3>
@@ -41,10 +43,11 @@ app.post("/send-mail", async (req, res) => {
       <p><b>Phone:</b> ${phone}</p>
       <p><b>Email:</b> ${email}</p>
       <p><b>Project Type:</b> ${projectType}</p>
-      <p><b>Message:</b><br>${message}</p>
+      <p><b>Message:</b> ${message}</p>
     `,
   };
 
+  // User auto-response email
   const userMail = {
     from: `"MyClosets Interiors" <${process.env.GMAIL_USER}>`,
     to: email,
@@ -63,6 +66,7 @@ app.post("/send-mail", async (req, res) => {
     `,
   };
 
+  // Sending email to admin and user
   try {
     await transporter.sendMail(adminMail);
     await transporter.sendMail(userMail);
@@ -73,5 +77,6 @@ app.post("/send-mail", async (req, res) => {
   }
 });
 
+// Set port from environment or use 5000 as fallback
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
