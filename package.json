@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "emailjs-com": "^3.2.0",
     "express": "^5.1.0",
     "framer-motion": "^12.23.22",
@@ -45,5 +46,18 @@
   },
   "devDependencies": {
     "react-scripts": "^5.0.1"
-  }
+  },
+  "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JhansiGondi/myclosets-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JhansiGondi/myclosets-backend/issues"
+  },
+  "homepage": "https://github.com/JhansiGondi/myclosets-backend#readme",
+  "description": ""
 }

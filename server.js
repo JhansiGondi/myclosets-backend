@@ -1,28 +1,40 @@
 import express from "express";
 import nodemailer from "nodemailer";
 import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: "https://myclosets.in",
+  methods: ["POST", "GET"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.post("/send-mail", async (req, res) => {
   const { name, phone, email, projectType, message } = req.body;
 
+  if (!name || !email || !phone || !projectType) {
+    return res.status(400).json({ success: false, message: "All required fields must be filled." });
+  }
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "jhanjohn9999@gmail.com", // your Gmail
-      pass: "toctfgxqtlhgzqof", // generated app password
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
     },
   });
 
-  // Admin email to receive the form submission
   const adminMail = {
-    from: `"${name}" <${email}>`, // user’s real email
-    replyTo: email, // replies go to user’s real email
-    to: "jhanjohn9999@gmail.com",
-    subject: `New Contact Message from ${name}`,
+    from: `"${name}" <${email}>`,
+    replyTo: email,
+    to: process.env.ADMIN_EMAIL,
+    subject: `New Contact Form Submission from ${name}`,
     html: `
       <h3>New Inquiry Received</h3>
       <p><b>Name:</b> ${name}</p>
@@ -33,20 +45,19 @@ app.post("/send-mail", async (req, res) => {
     `,
   };
 
-  // User email for auto-response
   const userMail = {
-    from: `"MyClosets Interiors" <jhanjohn9999@gmail.com>`,
+    from: `"MyClosets Interiors" <${process.env.GMAIL_USER}>`,
     to: email,
-    subject: "Thank You for Contacting MyClosets Interiors!",
+    subject: "Thank you for contacting MyClosets Interiors!",
     html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;">
-        <h2 style="color:#b49770;">Thank you, ${name}!</h2>
-        <p>We’ve received your message and our design expert will reach out to you shortly.</p>
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2 style="color: #b49770;">Thank you, ${name}!</h2>
+        <p>We've received your message and our design expert will contact you shortly.</p>
         <hr/>
-        <p style="color:gray;">
+        <p style="color: gray;">
           Warm regards,<br/>
           <b>MyClosets Interiors</b><br/>
-          Hyderabad | +91 63024 30938
+          Hyderabad | +91 9988745678
         </p>
       </div>
     `,
@@ -55,12 +66,12 @@ app.post("/send-mail", async (req, res) => {
   try {
     await transporter.sendMail(adminMail);
     await transporter.sendMail(userMail);
-    res.status(200).json({ success: true, message: "✅ Emails sent successfully" });
+    res.status(200).json({ success: true, message: "Emails sent successfully!" });
   } catch (err) {
-    console.error("❌ Error sending email:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error sending emails:", err);
+    res.status(500).json({ success: false, message: "Failed to send emails." });
   }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
