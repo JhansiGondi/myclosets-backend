@@ -3,35 +3,36 @@ import nodemailer from "nodemailer";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config(); // Loads environment variables from the .env file
+dotenv.config();
 
 const app = express();
-app.use(cors({ origin: "https://myclosets.in" }));  // Replace with your GoDaddy domain
-app.use(express.json()); // to parse incoming JSON requests
+app.use(cors());
+app.use(express.json());
 
-// POST endpoint to handle the contact form submission
+// POST endpoint for contact form
 app.post("/send-mail", async (req, res) => {
   const { name, phone, email, projectType, message } = req.body;
 
-  // Validate required fields
   if (!name || !email || !phone || !projectType) {
     return res.status(400).json({ success: false, message: "All required fields must be filled." });
   }
 
-  // Set up Nodemailer transport
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_PASS,
     },
+    tls: {
+      rejectUnauthorized: false, // Allow self-signed certificates (useful for Gmail)
+    }
   });
 
-  // Admin email (email to your email address)
+  // Admin email
   const adminMail = {
-    from: `"${name}" <${email}>`,  // Shows user's name and email
+    from: `"${name}" <${email}>`,
     replyTo: email,
-    to: process.env.ADMIN_EMAIL,  // This is your admin email
+    to: process.env.ADMIN_EMAIL,
     subject: `New Contact Form Submission from ${name}`,
     html: `
       <h3>New Inquiry Received</h3>
@@ -43,7 +44,7 @@ app.post("/send-mail", async (req, res) => {
     `,
   };
 
-  // Auto-response email to user (Thank you email)
+  // User auto-response
   const userMail = {
     from: `"MyClosets Interiors" <${process.env.GMAIL_USER}>`,
     to: email,
@@ -63,10 +64,8 @@ app.post("/send-mail", async (req, res) => {
   };
 
   try {
-    // Send both the admin and user emails
     await transporter.sendMail(adminMail);
     await transporter.sendMail(userMail);
-
     res.status(200).json({ success: true, message: "Emails sent successfully!" });
   } catch (err) {
     console.error("Error sending emails:", err);
@@ -74,6 +73,5 @@ app.post("/send-mail", async (req, res) => {
   }
 });
 
-// Use the PORT from environment variables or fallback to 5000 if not specified
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
