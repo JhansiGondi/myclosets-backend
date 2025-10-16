@@ -1,27 +1,24 @@
-// server.js
 import express from "express";
 import nodemailer from "nodemailer";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config(); // Loads environment variables from the .env file
 
 const app = express();
+app.use(cors({ origin: "https://myclosets.in" }));  // Replace with your GoDaddy domain
+app.use(express.json()); // to parse incoming JSON requests
 
-// Allow your GoDaddy domain to send requests
-app.use(cors({ origin: "https://myclosets.in" })); // Replace with your actual domain
-app.use(express.json()); // Middleware to parse incoming JSON requests
-
-// POST endpoint for contact form
+// POST endpoint to handle the contact form submission
 app.post("/send-mail", async (req, res) => {
   const { name, phone, email, projectType, message } = req.body;
 
-  // Basic validation
+  // Validate required fields
   if (!name || !email || !phone || !projectType) {
     return res.status(400).json({ success: false, message: "All required fields must be filled." });
   }
 
-  // Create the transporter for nodemailer (Gmail in this case)
+  // Set up Nodemailer transport
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -30,11 +27,11 @@ app.post("/send-mail", async (req, res) => {
     },
   });
 
-  // Admin email details
+  // Admin email (email to your email address)
   const adminMail = {
-    from: `"${name}" <${email}>`,
+    from: `"${name}" <${email}>`,  // Shows user's name and email
     replyTo: email,
-    to: process.env.ADMIN_EMAIL,
+    to: process.env.ADMIN_EMAIL,  // This is your admin email
     subject: `New Contact Form Submission from ${name}`,
     html: `
       <h3>New Inquiry Received</h3>
@@ -46,7 +43,7 @@ app.post("/send-mail", async (req, res) => {
     `,
   };
 
-  // User auto-response email
+  // Auto-response email to user (Thank you email)
   const userMail = {
     from: `"MyClosets Interiors" <${process.env.GMAIL_USER}>`,
     to: email,
@@ -65,19 +62,18 @@ app.post("/send-mail", async (req, res) => {
     `,
   };
 
-  // Send the emails
   try {
+    // Send both the admin and user emails
     await transporter.sendMail(adminMail);
     await transporter.sendMail(userMail);
-    res.status(200).json({ success: true, message: "✅ Emails sent successfully!" });
+
+    res.status(200).json({ success: true, message: "Emails sent successfully!" });
   } catch (err) {
     console.error("Error sending emails:", err);
-    res.status(500).json({ success: false, message: "❌ Failed to send emails." });
+    res.status(500).json({ success: false, message: "Failed to send emails." });
   }
 });
 
-// Dynamic port for deployment
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Use the PORT from environment variables or fallback to 5000 if not specified
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
