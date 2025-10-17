@@ -1,20 +1,13 @@
-const express = require("express");
-const cors = require("cors");
-const nodemailer = require("nodemailer");
-require("dotenv").config();
+const express = require('express');
+const cors = require('cors');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const app = express();
 
-// Allow your domain(s)
-app.use(
-  cors({
-    origin: ["https://myclosets.in", "https://www.myclosets.in"],
-  })
-);
-
+app.use(cors({ origin: ["https://myclosets.in", "https://www.myclosets.in"] }));
 app.use(express.json());
 
-// Simple health check
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
