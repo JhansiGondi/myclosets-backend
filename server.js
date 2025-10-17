@@ -1,36 +1,49 @@
-import express from "express";
-import nodemailer from "nodemailer";
-import cors from "cors";
-import dotenv from "dotenv";
-
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 const app = express();
 
-// Allow only your frontend domain
-app.use(cors({ origin: "https://myclosets.in" }));
+// Allow your domain(s)
+app.use(
+  cors({
+    origin: ["https://myclosets.in", "https://www.myclosets.in"],
+  })
+);
+
 app.use(express.json());
 
-// POST endpoint for contact form
-app.post("/send-mail", async (req, res) => {
-  const { name, phone, email, projectType, message } = req.body;
+// Simple health check
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+// Contact route
+app.post("/api/send-mail", async (req, res) => {
+  const { name, phone, email, projectType, message } = req.body || {};
 
   if (!name || !email || !phone || !projectType) {
-    return res.status(400).json({ success: false, message: "All required fields must be filled." });
+    return res.status(400).json({ success: false, message: "Missing required fields." });
   }
 
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS, // Gmail app password
+        pass: process.env.GMAIL_PASS,
       },
+      connectionTimeout: 20_000,
+      greetingTimeout: 20_000,
+      socketTimeout: 30_000,
     });
 
-    // Admin email
-    const adminMail = {
-      from: `"${name}" <${email}>`,
+    // To Admin
+    await transporter.sendMail({
+      from: `"${name}" <${process.env.GMAIL_USER}>`,
       replyTo: email,
       to: process.env.ADMIN_EMAIL,
       subject: `New Contact Form Submission from ${name}`,
@@ -40,12 +53,12 @@ app.post("/send-mail", async (req, res) => {
         <p><b>Phone:</b> ${phone}</p>
         <p><b>Email:</b> ${email}</p>
         <p><b>Project Type:</b> ${projectType}</p>
-        <p><b>Message:</b><br>${message}</p>
+        <p><b>Message:</b><br>${message || ""}</p>
       `,
-    };
+    });
 
-    // User auto-response
-    const userMail = {
+    // Auto-reply to user
+    await transporter.sendMail({
       from: `"MyClosets Interiors" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: "Thank you for contacting MyClosets Interiors!",
@@ -61,17 +74,18 @@ app.post("/send-mail", async (req, res) => {
           </p>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(adminMail);
-    await transporter.sendMail(userMail);
-
-    res.status(200).json({ success: true, message: "Emails sent successfully!" });
-  } catch (error) {
-    console.error("Error sending emails:", error);
-    res.status(500).json({ success: false, message: "Failed to send emails." });
+    res.json({ success: true, message: "Emails sent successfully." });
+  } catch (err) {
+    console.error("Email error:", err);
+    res.status(500).json({ success: false, message: "Email send failed." });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// IMPORTANT for Passenger (cPanel) – listen on provided PORT
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
