@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import nodemailer from "nodemailer";
 import cors from "cors";
@@ -6,10 +7,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Allow requests from your frontend domain
+app.use(cors({ origin: "https://myclosets.in" })); 
 app.use(express.json());
 
-// POST endpoint for contact form
+// Contact form POST endpoint
 app.post("/send-mail", async (req, res) => {
   const { name, phone, email, projectType, message } = req.body;
 
@@ -23,12 +26,8 @@ app.post("/send-mail", async (req, res) => {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_PASS,
     },
-    tls: {
-      rejectUnauthorized: false, // Allow self-signed certificates (useful for Gmail)
-    }
   });
 
-  // Admin email
   const adminMail = {
     from: `"${name}" <${email}>`,
     replyTo: email,
@@ -44,7 +43,6 @@ app.post("/send-mail", async (req, res) => {
     `,
   };
 
-  // User auto-response
   const userMail = {
     from: `"MyClosets Interiors" <${process.env.GMAIL_USER}>`,
     to: email,
@@ -73,5 +71,6 @@ app.post("/send-mail", async (req, res) => {
   }
 });
 
+// Use dynamic port for Render
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
